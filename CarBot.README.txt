@@ -1,0 +1,15 @@
+CarBot:
+-------
+CarBot is a chatbot which will give you answers for any car questions you may have! 
+It can even give you recommendations for vehicles to purchase based on your price range, features you may want, type of car, etc.
+CarBot uses the ChatBison LLM from Google's Vertex.AI.
+It is tested on a Google Cloud VM, but it can also run on any other machine with Python3 and the needed packages installed.
+
+Required Packages:
+vertexai
+google-ai-platform
+pysimplegui
+colorama
+termcolor
+
+Enjoy :)
