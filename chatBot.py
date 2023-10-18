@@ -31,10 +31,10 @@ def initChatBot():
         #experiment_description='my experiment decsription'
     )
     vertexai.init(project="lexical-list-320222", location="us-central1")
-    chat_model = ChatModel.from_pretrained("chat-bison@001")
+    chat_model = ChatModel.from_pretrained("chat-bison")
     parameters = {
         "temperature": 0.2,
-        "max_output_tokens": 512,
+        "max_output_tokens": 1024,
         "top_p": 0.8,
         "top_k": 40
     }
