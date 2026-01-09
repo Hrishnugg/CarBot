@@ -179,7 +179,7 @@ export default function Home() {
                   <Zap className="w-4 h-4 text-yellow-500" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Gemini 2.0 Flash</p>
+                  <p className="text-sm font-medium">Gemini 3 Flash</p>
                   <p className="text-xs text-muted-foreground">Latest AI model</p>
                 </div>
               </div>
