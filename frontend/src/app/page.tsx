@@ -214,11 +214,12 @@ export default function Home() {
                         for (const part of message.parts) {
                           if (part.type === 'text') {
                             textContent += (part as { type: 'text'; text: string }).text;
-                          } else if (part.type === 'tool-invocation') {
-                            const toolPart = part as { type: 'tool-invocation'; toolInvocation: { toolName: string; state: string } };
-                            if (toolPart.toolInvocation.state === 'call' || toolPart.toolInvocation.state === 'partial-call') {
+                          } else if (part.type.startsWith('tool-')) {
+                            // In AI SDK v6, tool parts have state directly on the part
+                            const toolPart = part as unknown as { type: string; state: string; toolName?: string };
+                            if (toolPart.state === 'call' || toolPart.state === 'partial-call' || toolPart.state === 'input-streaming') {
                               isToolCalling = true;
-                              toolName = toolPart.toolInvocation.toolName;
+                              toolName = toolPart.toolName || '';
                             }
                           }
                         }
