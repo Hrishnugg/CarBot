@@ -133,7 +133,6 @@ export async function POST(req: Request) {
     model: gateway("google/gemini-3-flash"),
     system: systemPrompt,
     messages: transformedMessages,
-    maxSteps: 3, // Allow model to continue after tool calls
     tools: {
       searchWeb: tool({
         description: "Search the web for current information about cars, prices, news, reviews, and specifications. Use this for any question requiring up-to-date information.",
