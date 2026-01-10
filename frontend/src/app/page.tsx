@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useRef, useEffect, useState } from "react";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
@@ -13,7 +14,9 @@ export default function Home() {
   const centerFileInputRef = useRef<HTMLInputElement>(null);
 
   const { messages, sendMessage, status, setMessages } = useChat({
-    api: "/api/chat",
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+    }),
   });
 
   const isLoading = status === "streaming" || status === "submitted";
