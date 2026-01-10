@@ -130,12 +130,7 @@ func initGemini() error {
 		},
 	}
 
-	// Enable Google Search grounding for web search capability
-	model.Tools = []*genai.Tool{
-		{GoogleSearch: &genai.GoogleSearch{}},
-	}
-
-	log.Println("Gemini 3 Flash Preview model initialized successfully with Google Search grounding")
+	log.Println("Gemini 3 Flash Preview model initialized successfully")
 	return nil
 }
 
@@ -218,19 +213,6 @@ func chatHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Check for grounding metadata (search sources)
-			if candidate.GroundingMetadata != nil {
-				if candidate.GroundingMetadata.GroundingChunks != nil {
-					for _, chunk := range candidate.GroundingMetadata.GroundingChunks {
-						if chunk.Web != nil {
-							sources = append(sources, Source{
-								Title: chunk.Web.Title,
-								URL:   chunk.Web.URI,
-							})
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -289,7 +271,7 @@ func main() {
 	}
 
 	log.Printf("CarBot Go backend starting on port %s...", port)
-	log.Printf("Model: Gemini 3 Flash Preview with Google Search grounding enabled")
+	log.Printf("Model: Gemini 3 Flash Preview")
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Server failed: %v", err)

@@ -10,19 +10,22 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.6",
+    "@ai-sdk/gateway": "^3.0.10",
     "@ai-sdk/react": "^3.0.23",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@tailwindcss/typography": "^0.5.19",
     "ai": "^6.0.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "geist": "^1.5.1",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.5"
   },

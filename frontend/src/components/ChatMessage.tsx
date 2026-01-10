@@ -1,6 +1,7 @@
 "use client";
 
-import { Car, User, Globe, Loader2 } from "lucide-react";
+import { Globe, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface Source {
   title: string;
@@ -12,71 +13,63 @@ interface ChatMessageProps {
   content: string;
   sources?: Source[];
   isStreaming?: boolean;
+  isToolCalling?: boolean;
+  toolName?: string;
 }
 
-export function ChatMessage({ role, content, sources, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ role, content, sources, isStreaming, isToolCalling, toolName }: ChatMessageProps) {
   const isUser = role === "user";
 
-  return (
-    <div className={`message-appear flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
-      {/* Avatar */}
-      <div
-        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-          isUser
-            ? "bg-gradient-to-br from-blue-500 to-blue-600"
-            : "bg-gradient-to-br from-orange-500 to-orange-600"
-        }`}
-      >
-        {isUser ? (
-          <User className="w-5 h-5 text-white" />
-        ) : (
-          <Car className="w-5 h-5 text-white" />
-        )}
-      </div>
-
-      {/* Message content */}
-      <div
-        className={`flex-1 max-w-[80%] ${isUser ? "text-right" : ""}`}
-      >
-        <div
-          className={`inline-block px-4 py-3 rounded-2xl ${
-            isUser
-              ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-sm"
-              : "bg-gray-800 text-gray-100 rounded-tl-sm"
-          }`}
+  if (isUser) {
+    // User message - right-aligned bubble
+    return (
+      <div className="w-full flex justify-end py-2">
+        <div 
+          className="bg-[#2f2f2f] rounded-3xl text-white text-[15px] break-words whitespace-pre-wrap max-w-[70%]"
+          style={{ padding: '10px 18px' }}
         >
-          <div className="prose prose-invert prose-sm max-w-none">
-            {content.split('\n').map((line, i) => (
-              <p key={i} className="mb-1 last:mb-0">
-                {line || '\u00A0'}
-              </p>
-            ))}
-            {isStreaming && (
-              <span className="inline-flex items-center gap-1 text-orange-400">
-                <Loader2 className="w-3 h-3 animate-spin" />
-              </span>
-            )}
-          </div>
+          {content}
         </div>
+      </div>
+    );
+  }
 
-        {/* Sources */}
-        {sources && sources.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {sources.map((source, index) => (
-              <a
-                key={index}
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded-lg text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                <Globe className="w-3 h-3" />
-                {source.title || "Source"}
-              </a>
-            ))}
-          </div>
+  // Assistant message - clean text block without avatar/header
+  return (
+    <div className="w-full py-4">
+      {/* Tool calling indicator */}
+      {isToolCalling && (
+        <div className="flex items-center gap-2 text-gray-400 text-sm py-2 mb-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>{toolName ? `Using ${toolName}...` : 'Thinking...'}</span>
+        </div>
+      )}
+      
+      <div className="prose-chat max-w-none">
+        <ReactMarkdown>
+          {content}
+        </ReactMarkdown>
+        {isStreaming && (
+          <span className="inline-block w-2.5 h-5 ml-1 align-middle bg-white animate-pulse rounded-full" />
         )}
       </div>
+      
+      {sources && sources.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {sources.map((source, index) => (
+            <a
+              key={index}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-white/5 hover:bg-white/10 rounded-full text-blue-400 transition-colors border border-white/10"
+            >
+              <Globe className="w-3 h-3 stroke-[1.5px]" />
+              {source.title || "Source"}
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

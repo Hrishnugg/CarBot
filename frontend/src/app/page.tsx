@@ -1,367 +1,259 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useRef, useEffect, useState } from "react";
-import {
-  Car,
-  Plus,
-  Send,
-  Menu,
-  X,
-  User,
-  Loader2,
-  Globe,
-  Search,
-  Zap,
-  RotateCcw,
-  Square,
-  Moon,
-  Sun,
-  MessageSquare,
-  ChevronDown,
-  Mic,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
-
-const suggestions = [
-  {
-    icon: Car,
-    question: "Best sports cars under $50k",
-  },
-  {
-    icon: Search,
-    question: "Compare BMW M3 vs C63 AMG",
-  },
-  {
-    icon: Zap,
-    question: "Fastest electric cars in 2025",
-  },
-  {
-    icon: Globe,
-    question: "Tesla Model 3 refresh news",
-  },
-];
+import { ChatInput } from "@/components/ChatInput";
+import { ChatMessage } from "@/components/ChatMessage";
 
 export default function Home() {
-  const [input, setInput] = useState("");
-  const [isDark, setIsDark] = useState(true);
-  const { messages, sendMessage, status, setMessages, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-    }),
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [inputValue, setInputValue] = useState('');
+  const [centerFiles, setCenterFiles] = useState<File[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const centerFileInputRef = useRef<HTMLInputElement>(null);
+
+  const { messages, sendMessage, status, setMessages } = useChat({
+    api: "/api/chat",
   });
 
   const isLoading = status === "streaming" || status === "submitted";
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
-  }, [input]);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (input.trim() && !isLoading) {
-      sendMessage({ text: input.trim() });
-      setInput("");
+  const handleSendWithFiles = async (text: string, files?: File[]) => {
+    // For now, just send text - file handling will be added with multimodal support
+    if (text.trim() || (files && files.length > 0)) {
+      sendMessage({ text: text || "Please analyze the attached file(s)." });
     }
   };
 
-  const handleSuggestionClick = (question: string) => {
-    if (!isLoading) {
-      sendMessage({ text: question });
+  const handleCenterSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if ((inputValue.trim() || centerFiles.length > 0) && !isLoading) {
+      handleSendWithFiles(inputValue, centerFiles);
+      setInputValue('');
+      setCenterFiles([]);
     }
+  };
+
+  const handleCenterFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setCenterFiles((prev) => [...prev, ...newFiles]);
+    }
+    if (centerFileInputRef.current) {
+      centerFileInputRef.current.value = "";
+    }
+  };
+
+  const removeCenterFile = (index: number) => {
+    setCenterFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const clearChat = () => {
     setMessages([]);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (input.trim() && !isLoading) {
-        sendMessage({ text: input.trim() });
-        setInput("");
-      }
-    }
-  };
-
-  const getMessageContent = (message: (typeof messages)[0]): string => {
-    const parts = message.parts || [];
-    return parts
-      .filter((part) => part.type === "text" || part.type === "reasoning")
-      .map((part) => ("text" in part ? part.text : ""))
-      .join("");
+    setSidebarOpen(true); // Keep sidebar open on desktop usually
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="chatgpt-container">
       {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-[#171717] dark:bg-[#171717] flex flex-col transform transition-transform duration-200 ease-out lg:relative lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* New Chat Button */}
-        <div className="p-2">
-          <button
-            onClick={clearChat}
-            className="w-full flex items-center gap-2 px-3 py-3 rounded-lg text-sm text-white/90 hover:bg-white/10 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New chat</span>
-          </button>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-2">
-          {/* Recent Section */}
-          <div className="py-2">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-medium text-white/50">Recent</span>
+      {sidebarOpen && (
+        <div className="sidebar">
+          <div className="sidebar-header">
+            <div className="logo-container" onClick={clearChat} style={{cursor: 'pointer'}}>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+              </svg>
             </div>
-            <button className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/80 hover:bg-white/10 transition-colors text-left">
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span className="truncate">Welcome to CarBot</span>
+            <button className="icon-btn" onClick={() => setSidebarOpen(false)}>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
           </div>
 
-          {/* Capabilities Section */}
-          <div className="py-2 mt-2">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-medium text-white/50">Capabilities</span>
+          <div className="sidebar-content">
+            <div className="nav-item" onClick={clearChat}>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              <span>New chat</span>
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/80">
-                <Globe className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>Web Search</span>
-              </div>
-              <div className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/80">
-                <Zap className="w-4 h-4 text-yellow-400 shrink-0" />
-                <span>Gemini 3 Flash</span>
-              </div>
-              <div className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/80">
-                <Car className="w-4 h-4 text-orange-400 shrink-0" />
-                <span>Car Expert</span>
+            <div className="nav-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <span>Search chats</span>
+            </div>
+
+            <div className="section-label">Your chats</div>
+            <div className="nav-item">
+              <span>D&B Document Requirements</span>
+            </div>
+          </div>
+
+          <div className="user-profile">
+            <div className="user-profile-inner">
+              <div className="avatar">H</div>
+              <div className="user-info">
+                <span className="user-name">Hrishi Hari</span>
+                <span className="user-plan">Plus</span>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="p-2 mt-auto">
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/80 hover:bg-white/10 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-              <Car className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-white/90">CarBot</p>
-            </div>
-            {isDark ? (
-              <Sun className="w-4 h-4 text-white/50" />
-            ) : (
-              <Moon className="w-4 h-4 text-white/50" />
-            )}
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#212121] dark:bg-[#212121]">
-        {/* Header */}
-        <header className="flex items-center h-14 px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="lg:hidden text-white/70 hover:text-white hover:bg-white/10"
-          >
-            {isSidebarOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
+      <div className="main-content">
+        <div className="top-bar">
+          <div className="model-selector" style={{cursor: 'default'}}>
+            {!sidebarOpen && (
+              <button className="icon-btn" onClick={() => setSidebarOpen(true)} style={{marginRight: '8px'}}>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             )}
-          </Button>
-
-          <div className="flex-1 flex items-center justify-center">
-            <button className="flex items-center gap-1 text-white/90 hover:text-white">
-              <span className="text-base font-medium">CarBot</span>
-              <ChevronDown className="w-4 h-4" />
+            <span className="model-name">CarBot</span>
+          </div>
+          <div className="top-bar-actions">
+            <button className="icon-btn">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </button>
+            <button className="icon-btn" onClick={clearChat}>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </button>
           </div>
-
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={clearChat}
-              className="text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-          )}
-        </header>
-
-        {/* Chat Area */}
-        <ScrollArea className="flex-1">
-          <div className="max-w-3xl mx-auto w-full px-4">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center py-8">
-                <h1 className="text-3xl font-semibold text-white mb-8">
-                  What can I help with?
-                </h1>
-
-                {/* Suggestions Grid */}
-                <div className="grid grid-cols-2 gap-2 w-full max-w-xl">
-                  {suggestions.map((suggestion, index) => {
-                    const Icon = suggestion.icon;
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleSuggestionClick(suggestion.question)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-left transition-colors"
-                      >
-                        <Icon className="w-4 h-4 text-white/50 shrink-0" />
-                        <span className="text-sm text-white/80">{suggestion.question}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 space-y-6">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-4 ${
-                      message.role === "user" ? "justify-end" : ""
-                    }`}
-                  >
-                    {message.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shrink-0">
-                        <Car className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-
-                    <div
-                      className={`max-w-[80%] ${
-                        message.role === "user"
-                          ? "bg-[#2f2f2f] text-white rounded-3xl px-5 py-3"
-                          : "text-white/90"
-                      }`}
-                    >
-                      <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                        {getMessageContent(message)}
-                        {isLoading &&
-                          message.role === "assistant" &&
-                          message.id === messages[messages.length - 1]?.id && (
-                            <span className="inline-flex items-center ml-1">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            </span>
-                          )}
-                      </div>
-                    </div>
-
-                    {message.role === "user" && (
-                      <div className="w-8 h-8 rounded-full bg-[#5a5a5a] flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-
-        {/* Input Area */}
-        <div className="p-4 pb-6">
-          <div className="max-w-3xl mx-auto">
-            <form onSubmit={handleSubmit}>
-              <div className="relative flex items-center bg-[#2f2f2f] rounded-3xl border border-white/10">
-                <button
-                  type="button"
-                  className="p-3 text-white/50 hover:text-white/80 transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask anything"
-                  disabled={isLoading}
-                  rows={1}
-                  className="flex-1 min-h-[24px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] text-white placeholder:text-white/50 py-3 px-0"
-                />
-
-                <div className="flex items-center gap-1 pr-2">
-                  {isLoading ? (
-                    <button
-                      type="button"
-                      onClick={stop}
-                      className="p-2 text-white/50 hover:text-white/80 transition-colors"
-                    >
-                      <Square className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="p-2 text-white/50 hover:text-white/80 transition-colors"
-                      >
-                        <Mic className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={!input.trim()}
-                        className="p-2 text-white/50 hover:text-white/80 disabled:text-white/20 transition-colors"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </form>
-            <p className="mt-3 text-center text-xs text-white/40">
-              CarBot can make mistakes. Check important info.
-            </p>
-          </div>
         </div>
-      </main>
+
+        {/* Center Content / Chat Area */}
+        <div className="flex-1 overflow-y-auto flex flex-col items-center">
+             {messages.length === 0 ? (
+                <div className="center-content w-full">
+                    <h1 className="heading">What's on your mind today?</h1>
+                    <div className="input-container">
+                    {/* File previews for center input */}
+                    {centerFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2 px-3">
+                        {centerFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="relative flex items-center gap-2 bg-[#3a3a3a] rounded-lg px-3 py-2 text-sm text-gray-200"
+                          >
+                            {file.type.startsWith("image/") ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={file.name}
+                                className="w-8 h-8 object-cover rounded"
+                              />
+                            ) : (
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            )}
+                            <span className="max-w-[120px] truncate">{file.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeCenterFile(index)}
+                              className="ml-1 p-0.5 hover:bg-[#4a4a4a] rounded transition-colors"
+                            >
+                              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <form onSubmit={handleCenterSubmit} className="input-wrapper">
+                        {/* Hidden file input */}
+                        <input
+                          type="file"
+                          ref={centerFileInputRef}
+                          hidden
+                          multiple
+                          accept="image/*,.pdf,.txt,.md"
+                          onChange={handleCenterFileChange}
+                        />
+                        <button type="button" className="input-icon-btn" onClick={() => centerFileInputRef.current?.click()}>
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                        <input
+                            type="text"
+                            className="chat-input"
+                            placeholder="Ask anything"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                        />
+                        <button type="submit" className="send-btn" disabled={!inputValue.trim() && centerFiles.length === 0}>
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/>
+                            </svg>
+                        </button>
+                    </form>
+                    </div>
+                </div>
+             ) : (
+                <div className="flex flex-col w-full max-w-[48rem] pt-4 px-4" style={{ paddingBottom: '100px' }}>
+                    {messages.map((message) => {
+                      // Extract text content and check for tool calls from message.parts (AI SDK format)
+                      let textContent = '';
+                      let isToolCalling = false;
+                      let toolName = '';
+                      
+                      if (message.parts) {
+                        for (const part of message.parts) {
+                          if (part.type === 'text') {
+                            textContent += (part as { type: 'text'; text: string }).text;
+                          } else if (part.type === 'tool-invocation') {
+                            const toolPart = part as { type: 'tool-invocation'; toolInvocation: { toolName: string; state: string } };
+                            if (toolPart.toolInvocation.state === 'call' || toolPart.toolInvocation.state === 'partial-call') {
+                              isToolCalling = true;
+                              toolName = toolPart.toolInvocation.toolName;
+                            }
+                          }
+                        }
+                      }
+                      
+                      const isLastMessage = message.id === messages[messages.length - 1]?.id;
+                      
+                      return (
+                        <ChatMessage
+                          key={message.id}
+                          role={message.role as "user" | "assistant"}
+                          content={textContent}
+                          sources={[]}
+                          isStreaming={isLoading && isLastMessage && message.role === 'assistant'}
+                          isToolCalling={isToolCalling && isLastMessage && isLoading}
+                          toolName={toolName === 'searchWeb' ? 'Web Search' : toolName}
+                        />
+                      );
+                    })}
+                    <div ref={messagesEndRef} className="h-4" />
+                </div>
+             )}
+        </div>
+        
+        {/* Chat Input (Bottom - Only visible when there are messages) */}
+        {messages.length > 0 && (
+             <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center" style={{
+                 background: 'linear-gradient(to top, #212121 70%, transparent)',
+             }}>
+               <div className="w-full max-w-[48rem] px-4 pt-10 pb-6">
+                 <ChatInput 
+                   onSendMessage={handleSendWithFiles}
+                   isLoading={isLoading}
+                 />
+               </div>
+             </div>
+        )}
+      </div>
     </div>
   );
 }
